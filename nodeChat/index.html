@@ -3,39 +3,135 @@
    <head>
       <title>Socket.IO chat</title>
       <style>
-         * { margin: 0; padding: 0; box-sizing: border-box; }
-         body { font: 13px Helvetica, Arial; }
-         form { background: #000; padding: 3px; position: fixed; bottom: 0; width: 100%; }
-         form input { border: 0; padding: 10px; width: 90%; margin-right: .5%; }
-         form button { width: 9%; background: rgb(130, 224, 255); border: none; padding: 10px; }
-         #messages { list-style-type: none; margin: 0; padding: 0; }
-         #messages li { padding: 5px 10px; }
-         #messages li:nth-child(odd) { background: #eee; }
+         .users {
+            float:left;
+            width: 20%;
+            border: 2px solid gray;
+            margin: 25px;
+         }
+         .chat{
+            float:left;
+            width: 48%;
+            border: 2px solid gray;
+            margin: 25px;
+         }
+         .group{
+            float:left;
+            width: 20%;
+            border: 2px solid gray;
+            margin: 25px;
+         }
+
       </style>
    </head>
    <body>
-      <ul id="messages"></ul>
-      <form action="">
-         <input id="m" autocomplete="off" /><button>Send</button>
-      </form>
+
+   <div id="users" class="users">
+      <span>
+         <ul id="userlist" class = "list-group"></ul>
+      </span>
+   </div>
+   <div id=“chat” class="chat" >
+      <span>
+         <ul id="messages" class = "list-group"></ul>
+      </span>
+      <span class="container">
+         <form>
+            <div class="form-group">
+               <input type = "text" width="50%" class="form-control" id="m" onkeydown= "if(event.keyCode==13)submitForm()" autocomplete="off" />
+               <button type = "button" class = "btn btn-primary" onclick="submitForm()">Send</button>
+               <input style="display:none" mce_style="display:none">
+            </div>
+         </form>
+      </span>
+   </div>
+   <div id="group" class="group">
+      <span>
+         <ul id="channellist" class = "list-group"></ul>
+      </span>
+      <div>
+         <p>Add a new channel.</p>
+         <input type="text" id="groupname"/>
+         <input type="text" id="groupusers">
+         <button type="button" onclick="newGroup()">Add</button>
+      </div>
+   </div>
+
       <script src="/socket.io/socket.io.js"></script>
       <script src="https://cdn.socket.io/socket.io-1.2.0.js"></script>
       <script src="http://code.jquery.com/jquery-1.11.1.js"></script>
+      <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css">
+      <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
       <script>
+
          nickname = prompt("What is your nickname?");
          var server = io();
          server.emit("join", nickname);
-         chanel = prompt("What is your chanel?");
-         server.emit("chanel", chanel);
-          
-         $('form').submit(function(){
-           server.emit('chat message', $('#m').val());
-           $('#m').val('');
-           return false;
-         });
+         channel = prompt("What is your chanel?");
+         server.emit("channel", channel);
+         server.emit("new user", nickname);
+         var btnId = 0;
+
+         var submitForm = function () {
+            var value = document.getElementById("m").value;
+            if(value && value.length > 0) {
+               server.emit('chat message', document.getElementById("m").value);
+               document.getElementById("m").value = "";
+            }
+         }
+
+         var joinChannel = function(data) {
+            console.log("===============" + data);
+         }
+
+         var newGroup = function() {
+            var data={};
+            var groupname = document.getElementById("groupname").value;
+            var groupusers = document.getElementById("groupusers").value;
+            data.groupname = groupname;
+            data.groupusers = groupusers;
+            console.log("===============" + data);
+            server.emit('new group', data);
+         }
          server.on('chat message', function(msg){
-           $('#messages').append($('<li>').text(msg));
+            var message = document.createElement('li');
+            message.setAttribute("class", "list-group-item");
+            message.innerText = msg;
+            document.getElementById("messages").appendChild(message);
          });
+         server.on('new user', function(name){
+            var newUser = document.createElement("ls");
+            newUser.setAttribute("class", "list-group-item");
+            newUser.innerText = name;
+            document.getElementById("userlist").appendChild(newUser);
+         });
+         server.on('new channel', function(name) {
+            var channellist = document.getElementById('channellist');
+            var list = document.createElement('li');
+            list.setAttribute('class', 'list-group-item');
+            list.setAttribute('text-align', 'center');
+            list.innerText = name;
+            var btn = document.createElement('button');
+            btn.type = 'button';
+            btn.id = btnId;
+            btn.value = name;
+            btn.innerText = 'join';
+            btn.onclick="joinChannel(this.value)";
+            list.appendChild(btn);
+            channellist.appendChild(list);
+         });
+         server.on('join group', function(data) {
+            var groupusers = data.groupusers;
+            var users = groupusers.split(",");
+            var a = users.indexOf(nickname);
+            console.log('=======client join group====='+nickname);
+
+            if (a >= 0) {
+               console.log('============'+nickname);
+               server.emit('join group', data.groupname);
+            }
+         });
+
       </script>
    </body>
 </html>

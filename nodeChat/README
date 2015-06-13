@@ -58,6 +58,9 @@ $ redis-server
           `-._        _.-'
               `-.__.-'
 
+$ redis-cli shutdown
+save data and shutdown your redis database.
+
 Setup development environment on your machine
 
 Step 1: Use the Terminal to create a workspace on your machine, for example, create a folder named “Real_time_App”.
